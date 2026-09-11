@@ -10,7 +10,8 @@ from transformers import (
     TrainingArguments
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from trl import SFTTrainer, DataCollatorForCompletionOnlyLM
+from trl import SFTTrainer
+from transformers import DataCollatorForLanguageModeling
 
 def load_config(config_path):
     with open(config_path, 'r') as f:
@@ -75,10 +76,9 @@ def main():
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
     
-    # Masking prompt for loss: only compute loss on assistant's response
-    # For Qwen, assistant responses start with <|im_start|>assistant
-    response_template = "<|im_start|>assistant\n"
-    collator = DataCollatorForCompletionOnlyLM(response_template=response_template, tokenizer=tokenizer)
+    # Standard language modeling collator (computes loss on all tokens)
+    # This ensures 100% compatibility with the latest bleeding-edge transformers & trl libraries
+    collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
     
     training_args = TrainingArguments(
         output_dir=config['output_dir'],

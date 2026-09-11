@@ -7,3 +7,4 @@ accelerate
 evaluate
 rouge_score
 pyyaml
+torchao>=0.16.0
