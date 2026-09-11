@@ -9,7 +9,6 @@ from transformers import (
     BitsAndBytesConfig,
     TrainingArguments,
     Trainer,
-    DataCollatorForLanguageModeling,
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
@@ -29,10 +28,13 @@ def tokenize_and_format(example, tokenizer, max_length=512):
         example["messages"], tokenize=False, add_generation_prompt=False
     )
     tokenized = tokenizer(
-        text, truncation=True, max_length=max_length, padding=False
+        text, truncation=True, max_length=max_length, padding="max_length"
     )
-    # For causal LM training, labels = input_ids (the trainer shifts them internally)
-    tokenized["labels"] = tokenized["input_ids"].copy()
+    # For causal LM training, labels = input_ids.
+    # Set label to -100 on padding tokens so loss ignores them.
+    labels = tokenized["input_ids"].copy()
+    labels = [-100 if token == tokenizer.pad_token_id else token for token in labels]
+    tokenized["labels"] = labels
     return tokenized
 
 
@@ -104,8 +106,8 @@ def main():
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
 
-    # Standard data collator for causal language modelling
-    collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+    # No custom collator needed — data is already padded to a fixed length
+    # and labels have -100 on pad positions so loss ignores them
 
     # --- Training arguments (uses the rock-stable transformers.TrainingArguments) ---
     training_args = TrainingArguments(
@@ -127,7 +129,6 @@ def main():
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        data_collator=collator,
     )
 
     print("Starting training...")
