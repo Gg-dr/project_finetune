@@ -10,7 +10,7 @@ from transformers import (
     TrainingArguments
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from trl import SFTTrainer
+from trl import SFTTrainer, SFTConfig
 from transformers import DataCollatorForLanguageModeling
 
 def load_config(config_path):
@@ -80,7 +80,7 @@ def main():
     # This ensures 100% compatibility with the latest bleeding-edge transformers & trl libraries
     collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
     
-    training_args = TrainingArguments(
+    training_args = SFTConfig(
         output_dir=config['output_dir'],
         per_device_train_batch_size=config['per_device_train_batch_size'],
         gradient_accumulation_steps=config['gradient_accumulation_steps'],
@@ -91,7 +91,8 @@ def main():
         eval_steps=100,
         save_strategy="epoch",
         bf16=config['bf16'],
-        report_to="none" # Turn off wandb to keep it simple for the lab
+        report_to="none", # Turn off wandb to keep it simple for the lab
+        max_seq_length=512, # Keep max length small to fit in 16GB
     )
     
     def formatting_prompts_func(example):
@@ -112,7 +113,6 @@ def main():
         args=training_args,
         formatting_func=formatting_prompts_func,
         data_collator=collator,
-        max_seq_length=512, # Keep max length small to fit in 16GB
     )
     
     print("Starting training...")
