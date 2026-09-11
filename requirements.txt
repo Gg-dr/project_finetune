@@ -1,0 +1,9 @@
+transformers
+datasets
+peft
+trl
+bitsandbytes
+accelerate
+evaluate
+rouge_score
+pyyaml
