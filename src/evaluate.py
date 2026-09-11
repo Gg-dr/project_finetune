@@ -18,7 +18,7 @@ def load_inference_model(base_model_id, adapter_path=None, use_qlora=False):
     model = AutoModelForCausalLM.from_pretrained(
         base_model_id,
         quantization_config=bnb_config,
-        torch_dtype=torch.bfloat16,
+        dtype=torch.bfloat16,
         device_map="auto"
     )
     tokenizer = AutoTokenizer.from_pretrained(base_model_id)
